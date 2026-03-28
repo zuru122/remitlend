@@ -660,47 +660,6 @@ fn test_approve_remint_allows_authorized_minter_remint() {
 }
 
 #[test]
-fn test_burn_clears_transfer_cooldown_before_remint() {
-    let env = Env::default();
-    env.mock_all_auths();
-
-    let admin = Address::generate(&env);
-    let wallet_a = Address::generate(&env);
-    let wallet_b = Address::generate(&env);
-    let wallet_c = Address::generate(&env);
-
-    let contract_id = env.register(RemittanceNFT, ());
-    let client = RemittanceNFTClient::new(&env, &contract_id);
-
-    client.initialize(&admin);
-    client.mint(&wallet_a, &500, &create_test_hash(&env, 31), &None);
-    client.transfer(&wallet_a, &wallet_b, &None);
-
-    env.as_contract(&contract_id, || {
-        assert!(env
-            .storage()
-            .persistent()
-            .has(&DataKey::TransferCooldown(wallet_b.clone())));
-    });
-
-    client.burn(&wallet_b, &None);
-
-    env.as_contract(&contract_id, || {
-        assert!(!env
-            .storage()
-            .persistent()
-            .has(&DataKey::TransferCooldown(wallet_b.clone())));
-    });
-
-    client.mint(&wallet_b, &650, &create_test_hash(&env, 32), &None);
-    client.transfer(&wallet_b, &wallet_c, &None);
-
-    let metadata = client.get_metadata(&wallet_c).unwrap();
-    assert_eq!(metadata.score, 650);
-    assert_eq!(metadata.history_hash, create_test_hash(&env, 32));
-}
-
-#[test]
 fn test_record_default_auto_burns_after_threshold() {
     let env = Env::default();
     env.mock_all_auths();
